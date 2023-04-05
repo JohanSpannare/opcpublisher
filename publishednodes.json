@@ -1,0 +1,11 @@
+[
+  {
+    "EndpointUrl": "opc.tcp://host.docker.internal:53530/OPCUA/SimulationServer",
+    "UseSecurity": false,
+    "OpcNodes": [
+      {
+        "Id": "ns=3;i=1002"
+      }
+    ]
+  }
+]

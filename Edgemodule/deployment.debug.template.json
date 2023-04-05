@@ -1,0 +1,118 @@
+{
+  "$schema-template": "2.0.0",
+  "modulesContent": {
+    "$edgeAgent": {
+      "properties.desired": {
+        "schemaVersion": "1.1",
+        "runtime": {
+          "type": "docker",
+          "settings": {
+            "minDockerVersion": "v1.25",
+            "loggingOptions": "",
+            "registryCredentials": {}
+          }
+        },
+        "systemModules": {
+          "edgeAgent": {
+            "type": "docker",
+            "settings": {
+              "image": "mcr.microsoft.com/azureiotedge-agent:DEFAULT_RT_IMAGE",
+              "createOptions": {}
+            }
+          },
+          "edgeHub": {
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "mcr.microsoft.com/azureiotedge-hub:DEFAULT_RT_IMAGE",
+              "createOptions": {
+                "HostConfig": {
+                  "PortBindings": {
+                    "5671/tcp": [
+                      {
+                        "HostPort": "5671"
+                      }
+                    ],
+                    "8883/tcp": [
+                      {
+                        "HostPort": "8883"
+                      }
+                    ],
+                    "443/tcp": [
+                      {
+                        "HostPort": "443"
+                      }
+                    ]
+                  }
+                },
+                "Env": [
+                  "OptimizeForPerformance=false"
+                ]
+              }
+              
+            }
+          }
+        },
+        "modules": {
+          "OPCPublisher": {
+            "version": "1.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "mcr.microsoft.com/iotedge/opc-publisher:latest",
+              "createOptions": {
+                "Hostname": "publisher",
+                "Cmd": [
+                  "--C",
+                  "--aa",
+                  "--to",
+                  "--pf=/data/publishednodes.json",
+                  "--ll=verbose",
+                  "--BypassCertVerification=true",
+                  "--mm=PubSub",
+                  "--me=Json",
+                  "--bs=1"
+                ],
+                "HostConfig": {
+                  "Binds": [
+                    "C:\\src\\OPC.Publisher.POC:/data"
+
+                  ]
+                },
+                "Env": [
+                  "ApplicationCertificateSubjectName=false",
+                  "PCS_IOTHUB_CONNSTRING=HostName=iothubcellimpact.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=uKBsgO1EXaESIyeYYRsdeYdryfIq4U84a3r4Dy0eK1I="
+                ]
+              }
+            }
+          },
+          "opcprocessor": {
+            "version": "1.0.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "${MODULEDIR<../opcprocessor>.debug}",
+              "createOptions": {}
+            }
+          }
+        }
+      }
+    },
+    "$edgeHub": {
+      "properties.desired": {
+        "schemaVersion": "1.2",
+        "routes": {
+          "OPCPublisherToIoTHub": "FROM /messages/modules/OPCPublisher/* INTO BrokeredEndpoint(\"/modules/opcprocessor/inputs/input1\")",
+          //"OPCPublisherToIoTHub": "FROM /messages/modules/OPCPublisher/* INTO $upstream",
+          "opcprocessorToIoTHub": "FROM /messages/modules/opcprocessor/outputs/* INTO $upstream"
+        },
+        "storeAndForwardConfiguration": {
+          "timeToLiveSecs": 7200
+        }
+      }
+    }
+  }
+}
